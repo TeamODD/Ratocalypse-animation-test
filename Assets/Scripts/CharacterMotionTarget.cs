@@ -13,7 +13,7 @@ public class CharacterMotionTarget : MonoBehaviour
     private UnityEvent<CharacterMotionType> _animationStartEvent;
     private UnityEvent<CharacterMotionType> _animationEndEvent;
     private DeathMotionAnimator _deathMotionAnimator;
-    private Coroutine _coroutine;
+    private Coroutine _animationCoroutine;
 
     public void Awake()
     {
@@ -61,31 +61,12 @@ public class CharacterMotionTarget : MonoBehaviour
 
     private void SetAttack()
     {
-        if (_coroutine != null)
-        {
-            StopCoroutine(_coroutine);
-        }
-        _animationStartEvent.Invoke(CharacterMotionType.Attack);
-        _coroutine = StartCoroutine(PlayDelayedFeedbacks(0f, () =>
-        {
-            AttackFeedbacks.PlayFeedbacks();
-            _animationEndEvent.Invoke(CharacterMotionType.Attack);
-        }));
+        AttachNewAnimationCoroutine(CharacterMotionType.Attack, AttackFeedbacks);
     }
 
     private void SetDamage()
     {
-        if (_coroutine != null)
-        {
-            StopCoroutine(_coroutine);
-        }
-
-        _animationStartEvent.Invoke(CharacterMotionType.Damage);
-        _coroutine = StartCoroutine(PlayDelayedFeedbacks(0.5f, () =>
-        {
-            DamageFeedbacks.PlayFeedbacks();
-            _animationEndEvent.Invoke(CharacterMotionType.Damage);
-        }));
+        AttachNewAnimationCoroutine(CharacterMotionType.Damage, DamageFeedbacks);
     }
 
     private void SetDeath()
@@ -104,10 +85,26 @@ public class CharacterMotionTarget : MonoBehaviour
         DamageFeedbacks.Initialization();
     }
 
+    private void AttachNewAnimationCoroutine(CharacterMotionType type, MMFeedbacks feedbacks)
+    {
+        if (_animationCoroutine != null)
+        {
+            StopCoroutine(_animationCoroutine);
+        }
+
+        _animationCoroutine = StartCoroutine(DispatchAnimationEventCoroutine(type, feedbacks));
+    }
+
+    private IEnumerator DispatchAnimationEventCoroutine(CharacterMotionType type, MMFeedbacks feedbacks)
+    {
+        _animationStartEvent.Invoke(type);
+        yield return feedbacks.PlayFeedbacksCoroutine(transform.position);
+        _animationEndEvent.Invoke(type);
+    }
+
     private static IEnumerator PlayDelayedFeedbacks(float delay, Action action)
     {
         yield return new WaitForSeconds(delay);
         action();
-        yield return null;
     }
 }

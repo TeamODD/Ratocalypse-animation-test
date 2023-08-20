@@ -7,11 +7,13 @@ namespace TeamOdd.Ratocalypse.Animation
 {
     public class DeathMotionAnimator : MonoBehaviour
     {
-        private const int PrefabSize = 6;
         private const int FadeOutDuration = 3;
         private const int FadeOutSteps = 30;
+        private const int PrefabSize = 1;
+        private const float FrameDuration = 3.0f / PrefabSize;
 
         public GameObject Prefab;
+        public float ObjectScale = 1.0f;
 
         private readonly List<GameObject> _prefabList = new List<GameObject>();
         private UnityEvent<CharacterMotionType> _animationStartEvent;
@@ -23,6 +25,7 @@ namespace TeamOdd.Ratocalypse.Animation
         {
             _prefabList.Clear();
             _animationCoroutine = null;
+            _renderer = null;
         }
 
         public void SetAnimationStartEvent(UnityEvent<CharacterMotionType> animationStartEvent)
@@ -44,6 +47,7 @@ namespace TeamOdd.Ratocalypse.Animation
         {
             if (_animationCoroutine != null)
             {
+                ResetPrefabList();
                 StopCoroutine(_animationCoroutine);
             }
 
@@ -56,16 +60,22 @@ namespace TeamOdd.Ratocalypse.Animation
 
             while (_prefabList.Count != PrefabSize)
             {
-                var instance = Instantiate(Prefab, transform.position, Quaternion.identity);
-                instance.transform.Rotate(Vector3.forward, 90f);
+                var angle = Quaternion.AngleAxis(90f, Vector3.forward);
+                var instance = Instantiate(Prefab, transform.position, angle);
+                instance.transform.localScale *= ObjectScale;
                 _prefabList.Add(instance);
-                yield return new WaitForSeconds(0.5f);
+                yield return new WaitForSeconds(FrameDuration);
                 Destroy(instance);
             }
 
             _prefabList.Clear();
-            yield return StartCoroutine(FadeOutCoroutine());
             _animationEndEvent.Invoke(CharacterMotionType.Death);
+        }
+
+        private void ResetPrefabList()
+        {
+            _prefabList.ForEach(Destroy);
+            _prefabList.Clear();
         }
 
         private IEnumerator FadeOutCoroutine()
