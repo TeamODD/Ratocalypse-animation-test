@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using MoreMountains.Feedbacks;
 using TeamOdd.Ratocalypse.Animation;
 using UnityEngine;
@@ -13,11 +14,16 @@ public class CharacterMotionTarget : MonoBehaviour
     private UnityEvent<CharacterMotionType> _animationStartEvent;
     private UnityEvent<CharacterMotionType> _animationEndEvent;
     private DeathMotionAnimator _deathMotionAnimator;
-    private Coroutine _animationCoroutine;
+    private CharacterAnimationQueue _animationQueue;
 
     public void Awake()
     {
         Initialize();
+    }
+
+    public void SetAnimationQueue(CharacterAnimationQueue coroutineQueue)
+    {
+        _animationQueue = coroutineQueue;
     }
 
     public void SetDeathMotionAnimator(DeathMotionAnimator deathMotionAnimator)
@@ -56,7 +62,10 @@ public class CharacterMotionTarget : MonoBehaviour
 
     private void SetIdle()
     {
-        // TODO
+        _animationQueue.AddCallback(() =>
+        {
+            // TODO
+        });
     }
 
     private void SetAttack()
@@ -87,12 +96,10 @@ public class CharacterMotionTarget : MonoBehaviour
 
     private void AttachNewAnimationCoroutine(CharacterMotionType type, MMFeedbacks feedbacks)
     {
-        if (_animationCoroutine != null)
+        _animationQueue.AddCallback(() =>
         {
-            StopCoroutine(_animationCoroutine);
-        }
-
-        _animationCoroutine = StartCoroutine(DispatchAnimationEventCoroutine(type, feedbacks));
+            return DispatchAnimationEventCoroutine(type, feedbacks);
+        });
     }
 
     private IEnumerator DispatchAnimationEventCoroutine(CharacterMotionType type, MMFeedbacks feedbacks)
@@ -100,11 +107,5 @@ public class CharacterMotionTarget : MonoBehaviour
         _animationStartEvent.Invoke(type);
         yield return feedbacks.PlayFeedbacksCoroutine(transform.position);
         _animationEndEvent.Invoke(type);
-    }
-
-    private static IEnumerator PlayDelayedFeedbacks(float delay, Action action)
-    {
-        yield return new WaitForSeconds(delay);
-        action();
     }
 }

@@ -1,10 +1,11 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 
 namespace TeamOdd.Ratocalypse.Animation
 {
-    public class CharacterMotion : MonoBehaviour
+    public class CharacterMotion : CharacterAnimationQueue
     {
         public KeyCode AttacKeyCode = KeyCode.A;
         public KeyCode DamageKeyCode = KeyCode.D;
@@ -14,11 +15,13 @@ namespace TeamOdd.Ratocalypse.Animation
         public DeathMotionAnimator DeathMotionAnimator;
         public UnityEvent<CharacterMotionType> AnimationStartEvent;
         public UnityEvent<CharacterMotionType> AnimationEndEvent;
+        // public CharacterAnimationQueue CoroutineQueue;
 
         private Renderer _renderer;
 
-        public void Awake()
+        public new void Awake()
         {
+            base.Awake();
             Initialize();
         }
 
@@ -26,15 +29,15 @@ namespace TeamOdd.Ratocalypse.Animation
         {
             if (Input.GetKeyDown(AttacKeyCode))
             {
-                SetType(CharacterMotionType.Attack);
+                InvokeAnimation(CharacterMotionType.Attack);
             }
             else if (Input.GetKeyDown(DamageKeyCode))
             {
-                SetType(CharacterMotionType.Damage);
+                InvokeAnimation(CharacterMotionType.Damage);
             }
             else if (Input.GetKeyDown(DeathKeyCode))
             {
-                SetType(CharacterMotionType.Death);
+                InvokeAnimation(CharacterMotionType.Death);
             }
         }
 
@@ -48,7 +51,17 @@ namespace TeamOdd.Ratocalypse.Animation
             Debug.Log($"Animation End: {type}");
         }
 
-        public void SetType(CharacterMotionType type)
+        public void InvokeAnimation(string type)
+        {
+            if (!Enum.TryParse(type, out CharacterMotionType result))
+            {
+                throw new ArgumentException("Cannot find proper animation name.");
+            }
+
+            InvokeAnimation(result);
+        }
+
+        public void InvokeAnimation(CharacterMotionType type)
         {
             Target.SetType(type);
         }
@@ -56,9 +69,11 @@ namespace TeamOdd.Ratocalypse.Animation
         private void Initialize()
         {
             _renderer = Target.GetComponent<Renderer>();
+            Target.SetAnimationQueue(this);
             Target.SetDeathMotionAnimator(DeathMotionAnimator);
             Target.SetAnimationStartEvent(AnimationStartEvent);
             Target.SetAnimationEndEvent(AnimationEndEvent);
+            DeathMotionAnimator.SetAnimationQueue(this);
             DeathMotionAnimator.SetAnimationStartEvent(AnimationStartEvent);
             DeathMotionAnimator.SetAnimationEndEvent(AnimationEndEvent);
             DeathMotionAnimator.SetRenderer(_renderer);
