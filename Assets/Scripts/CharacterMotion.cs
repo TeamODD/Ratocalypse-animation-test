@@ -1,7 +1,5 @@
 using System;
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Events;
 
 namespace TeamOdd.Ratocalypse.Animation
 {
@@ -13,10 +11,8 @@ namespace TeamOdd.Ratocalypse.Animation
 
         public CharacterMotionTarget Target;
         public DeathMotionAnimator DeathMotionAnimator;
-        public UnityEvent<CharacterMotionType> AnimationStartEvent;
-        public UnityEvent<CharacterMotionType> AnimationEndEvent;
-        // public CharacterAnimationQueue CoroutineQueue;
 
+        private bool _initialized;
         private Renderer _renderer;
 
         public new void Awake()
@@ -29,15 +25,19 @@ namespace TeamOdd.Ratocalypse.Animation
         {
             if (Input.GetKeyDown(AttacKeyCode))
             {
-                InvokeAnimation(CharacterMotionType.Attack);
+                InvokeAnimation("Attack",
+                    () => OnAnimationStart(CharacterMotionType.Attack),
+                    () => OnAnimationEnd(CharacterMotionType.Attack));
             }
             else if (Input.GetKeyDown(DamageKeyCode))
             {
-                InvokeAnimation(CharacterMotionType.Damage);
+                InvokeAnimation("Damage",
+                    () => OnAnimationEnd(CharacterMotionType.Damage));
             }
             else if (Input.GetKeyDown(DeathKeyCode))
             {
-                InvokeAnimation(CharacterMotionType.Death);
+                InvokeAnimation("Death",
+                    () => OnAnimationEnd(CharacterMotionType.Death));
             }
         }
 
@@ -51,32 +51,34 @@ namespace TeamOdd.Ratocalypse.Animation
             Debug.Log($"Animation End: {type}");
         }
 
-        public void InvokeAnimation(string type)
+        public void InvokeAnimation(string type, params Action[] callbacks)
         {
-            if (!Enum.TryParse(type, out CharacterMotionType result))
+            if (!Enum.TryParse(type, out CharacterMotionType parseType))
             {
                 throw new ArgumentException("Cannot find proper animation name.");
             }
 
-            InvokeAnimation(result);
+            Target.InvokeAnimation(parseType, callbacks);
         }
 
-        public void InvokeAnimation(CharacterMotionType type)
+        public void InvokeAnimation(CharacterMotionType type, params Action[] callbacks)
         {
-            Target.SetType(type);
+            Target.InvokeAnimation(type, callbacks);
         }
 
         private void Initialize()
         {
+            if (_initialized)
+            {
+                return;
+            }
+
             _renderer = Target.GetComponent<Renderer>();
             Target.SetAnimationQueue(this);
             Target.SetDeathMotionAnimator(DeathMotionAnimator);
-            Target.SetAnimationStartEvent(AnimationStartEvent);
-            Target.SetAnimationEndEvent(AnimationEndEvent);
             DeathMotionAnimator.SetAnimationQueue(this);
-            DeathMotionAnimator.SetAnimationStartEvent(AnimationStartEvent);
-            DeathMotionAnimator.SetAnimationEndEvent(AnimationEndEvent);
             DeathMotionAnimator.SetRenderer(_renderer);
+            _initialized = true;
         }
     }
 }

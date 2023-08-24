@@ -2,7 +2,6 @@
 {
     public enum CharacterMotionType
     {
-        Idle,
         Attack,
         Damage,
         Death

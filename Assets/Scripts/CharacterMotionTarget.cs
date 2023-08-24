@@ -1,20 +1,18 @@
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using MoreMountains.Feedbacks;
 using TeamOdd.Ratocalypse.Animation;
 using UnityEngine;
-using UnityEngine.Events;
 
 public class CharacterMotionTarget : MonoBehaviour
 {
     public MMFeedbacks AttackFeedbacks;
     public MMFeedbacks DamageFeedbacks;
 
-    private UnityEvent<CharacterMotionType> _animationStartEvent;
-    private UnityEvent<CharacterMotionType> _animationEndEvent;
     private DeathMotionAnimator _deathMotionAnimator;
     private CharacterAnimationQueue _animationQueue;
+
+    private bool _initialized;
 
     public void Awake()
     {
@@ -31,81 +29,71 @@ public class CharacterMotionTarget : MonoBehaviour
         _deathMotionAnimator = deathMotionAnimator;
     }
 
-    public void SetAnimationStartEvent(UnityEvent<CharacterMotionType> animationStartEvent)
-    {
-        _animationStartEvent = animationStartEvent;
-    }
-
-    public void SetAnimationEndEvent(UnityEvent<CharacterMotionType> animationEndEvent)
-    {
-        _animationEndEvent = animationEndEvent;
-    }
-
-    public void SetType(CharacterMotionType type)
+    public void InvokeAnimation(CharacterMotionType type, params Action[] callbacks)
     {
         switch (type)
         {
-            case CharacterMotionType.Idle:
-                SetIdle();
-                break;
             case CharacterMotionType.Attack:
-                SetAttack();
+                InvokeAttack(callbacks);
                 break;
             case CharacterMotionType.Damage:
-                SetDamage();
+                InvokeDamage(callbacks);
                 break;
             case CharacterMotionType.Death:
-                SetDeath();
+                InvokeDeath(callbacks);
                 break;
+            default:
+                throw new ArgumentOutOfRangeException();
         }
     }
 
-    private void SetIdle()
+    private void InvokeAttack(params Action[] callbacks)
     {
-        _animationQueue.AddCallback(() =>
-        {
-            // TODO
-        });
+        _animationQueue.AddCallback(() => { return PlayAttackAnimation(callbacks); });
     }
 
-    private void SetAttack()
+    private void InvokeDamage(params Action[] callbacks)
     {
-        AttachNewAnimationCoroutine(CharacterMotionType.Attack, AttackFeedbacks);
+        _animationQueue.AddCallback(() => { return PlayDamageAnimation(callbacks); });
     }
 
-    private void SetDamage()
+    private void InvokeDeath(params Action[] callbacks)
     {
-        AttachNewAnimationCoroutine(CharacterMotionType.Damage, DamageFeedbacks);
+        _deathMotionAnimator.StartAnimation(callbacks);
     }
 
-    private void SetDeath()
+    private IEnumerator PlayAttackAnimation(params Action[] callbacks)
     {
-        if (_deathMotionAnimator == null)
-        {
-            throw new NullReferenceException("DeathMotionAnimator is null");
-        }
+        var position = transform.position;
+        var attackAnimationMiddleCallback = callbacks[0];
+        var attackAnimationEndCallback = callbacks[1];
+        var feedbacksCoroutine = StartCoroutine(AttackFeedbacks.PlayFeedbacksCoroutine(position));
+        yield return new WaitForSeconds(0.5f);
+        attackAnimationMiddleCallback();
+        yield return feedbacksCoroutine;
+        attackAnimationEndCallback();
+        yield return null;
+    }
 
-        _deathMotionAnimator.StartAnimation();
+    private IEnumerator PlayDamageAnimation(params Action[] callbacks)
+    {
+        var position = transform.position;
+        var attackAnimationEndCallback = callbacks[0];
+        var feedbacksCoroutine = StartCoroutine(AttackFeedbacks.PlayFeedbacksCoroutine(position));
+        yield return feedbacksCoroutine;
+        attackAnimationEndCallback();
+        yield return null;
     }
 
     private void Initialize()
     {
+        if (_initialized)
+        {
+            return;
+        }
+
         AttackFeedbacks.Initialization();
         DamageFeedbacks.Initialization();
-    }
-
-    private void AttachNewAnimationCoroutine(CharacterMotionType type, MMFeedbacks feedbacks)
-    {
-        _animationQueue.AddCallback(() =>
-        {
-            return DispatchAnimationEventCoroutine(type, feedbacks);
-        });
-    }
-
-    private IEnumerator DispatchAnimationEventCoroutine(CharacterMotionType type, MMFeedbacks feedbacks)
-    {
-        _animationStartEvent.Invoke(type);
-        yield return feedbacks.PlayFeedbacksCoroutine(transform.position);
-        _animationEndEvent.Invoke(type);
+        _initialized = true;
     }
 }

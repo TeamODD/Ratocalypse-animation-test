@@ -2,7 +2,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Events;
 
 namespace TeamOdd.Ratocalypse.Animation
 {
@@ -11,14 +10,12 @@ namespace TeamOdd.Ratocalypse.Animation
         private const int FadeOutDuration = 3;
         private const int FadeOutSteps = 30;
         private const int PrefabSize = 1;
-        private const float FrameDuration = 2.0f / PrefabSize;
+        private const float FrameDuration = 1.0f / PrefabSize;
 
         public GameObject Prefab;
         public float ObjectScale = 1.0f;
 
         private readonly List<GameObject> _prefabList = new List<GameObject>();
-        private UnityEvent<CharacterMotionType> _animationStartEvent;
-        private UnityEvent<CharacterMotionType> _animationEndEvent;
         private CharacterAnimationQueue _animationQueue;
         private Renderer _renderer;
 
@@ -33,33 +30,20 @@ namespace TeamOdd.Ratocalypse.Animation
             _animationQueue = animationQueue;
         }
 
-        public void SetAnimationStartEvent(UnityEvent<CharacterMotionType> animationStartEvent)
-        {
-            _animationStartEvent = animationStartEvent;
-        }
-
-        public void SetAnimationEndEvent(UnityEvent<CharacterMotionType> animationEndEvent)
-        {
-            _animationEndEvent = animationEndEvent;
-        }
-
         public void SetRenderer(Renderer renderer)
         {
             _renderer = renderer;
         }
 
-        public void StartAnimation()
+        public void StartAnimation(params Action[] callbacks)
         {
             ResetPrefabList();
-            _animationQueue.AddCallback(() =>
-            {
-                return AnimationCoroutine();
-            });
+            _animationQueue.AddCallback(() => { return AnimationCoroutine(callbacks); });
         }
 
-        private IEnumerator AnimationCoroutine()
+        private IEnumerator AnimationCoroutine(params Action[] callbacks)
         {
-            _animationStartEvent.Invoke(CharacterMotionType.Death);
+            var attackAnimationEndCallback = callbacks[0];
 
             while (_prefabList.Count != PrefabSize)
             {
@@ -71,8 +55,10 @@ namespace TeamOdd.Ratocalypse.Animation
                 Destroy(instance);
             }
 
+            yield return StartCoroutine(FadeOutCoroutine());
+
             _prefabList.Clear();
-            _animationEndEvent.Invoke(CharacterMotionType.Death);
+            attackAnimationEndCallback();
         }
 
         private void ResetPrefabList()
@@ -83,6 +69,7 @@ namespace TeamOdd.Ratocalypse.Animation
 
         private IEnumerator FadeOutCoroutine()
         {
+            // TODO
             yield return null;
         }
     }
