@@ -8,17 +8,36 @@ public class CharacterMotionTarget : MonoBehaviour
 {
     public MMFeedbacks AttackFeedbacks;
     public MMFeedbacks DamageFeedbacks;
+    public GameObject IDLE;
+    public GameObject Attacks;
+    public GameObject Damaged;
 
     private DeathMotionAnimator _deathMotionAnimator;
     private CharacterAnimationQueue _animationQueue;
 
     private bool _initialized;
-
+    void Start()
+    {
+        IDLE.SetActive(true);
+        Attacks.SetActive(false);
+        Damaged.SetActive(false);
+    }
     public void Awake()
     {
         Initialize();
     }
-
+    public void AttackON()
+    {
+        IDLE.SetActive(false);
+        Attacks.SetActive(true);
+        Damaged.SetActive(false);
+    }
+    public void DamagedON()
+    {
+        Damaged.SetActive(true);
+        Attacks.SetActive(false);
+        IDLE.SetActive(false);
+    }
     public void SetAnimationQueue(CharacterAnimationQueue coroutineQueue)
     {
         _animationQueue = coroutineQueue;
@@ -68,7 +87,9 @@ public class CharacterMotionTarget : MonoBehaviour
         var attackAnimationMiddleCallback = callbacks[0];
         var attackAnimationEndCallback = callbacks[1];
         var feedbacksCoroutine = StartCoroutine(AttackFeedbacks.PlayFeedbacksCoroutine(position));
-        yield return new WaitForSeconds(0.5f);
+        yield return new WaitForSeconds(0.4f);
+        AttackON();
+        yield return new WaitForSeconds(0.1f);
         attackAnimationMiddleCallback();
         yield return feedbacksCoroutine;
         attackAnimationEndCallback();
@@ -80,6 +101,7 @@ public class CharacterMotionTarget : MonoBehaviour
         var position = transform.position;
         var attackAnimationEndCallback = callbacks[0];
         var feedbacksCoroutine = StartCoroutine(AttackFeedbacks.PlayFeedbacksCoroutine(position));
+        DamagedON();
         yield return feedbacksCoroutine;
         attackAnimationEndCallback();
         yield return null;

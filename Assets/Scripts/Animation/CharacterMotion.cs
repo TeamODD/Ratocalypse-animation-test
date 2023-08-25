@@ -8,21 +8,19 @@ namespace TeamOdd.Ratocalypse.Animation
         public KeyCode AttacKeyCode = KeyCode.A;
         public KeyCode DamageKeyCode = KeyCode.D;
         public KeyCode DeathKeyCode = KeyCode.F;
-
+        public GameObject Mosaic;
         public CharacterMotionTarget Target;
         public DeathMotionAnimator DeathMotionAnimator;
-
         private bool _initialized;
         private Renderer _renderer;
-
         public new void Awake()
         {
             base.Awake();
             Initialize();
+            Mosaic.SetActive(false);
         }
-
         public void Update()
-        {
+        {   
             if (Input.GetKeyDown(AttacKeyCode))
             {
                 InvokeAnimation("Attack",

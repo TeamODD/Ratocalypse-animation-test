@@ -1,8 +1,8 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
+using UnityEngine.Events;
 namespace TeamOdd.Ratocalypse.Animation
 {
     public class DeathMotionAnimator : MonoBehaviour
@@ -11,14 +11,21 @@ namespace TeamOdd.Ratocalypse.Animation
         private const int FadeOutSteps = 30;
         private const int PrefabSize = 1;
         private const float FrameDuration = 1.0f / PrefabSize;
+        private void Dead()
+        {
+            PlayerDead.Invoke();
+        }
+        private bool MosaicState = false;
 
+        public GameObject Mosaic;
+        public GameObject Models;
+        public UnityEvent PlayerDead;
         public GameObject Prefab;
         public float ObjectScale = 1.0f;
 
         private readonly List<GameObject> _prefabList = new List<GameObject>();
         private CharacterAnimationQueue _animationQueue;
         private Renderer _renderer;
-
         public void Awake()
         {
             _prefabList.Clear();
@@ -44,7 +51,8 @@ namespace TeamOdd.Ratocalypse.Animation
         private IEnumerator AnimationCoroutine(params Action[] callbacks)
         {
             var attackAnimationEndCallback = callbacks[0];
-
+            Mosaic.SetActive(true);
+            Dead();
             while (_prefabList.Count != PrefabSize)
             {
                 var angle = Quaternion.AngleAxis(90f, Vector3.forward);
@@ -59,6 +67,7 @@ namespace TeamOdd.Ratocalypse.Animation
 
             _prefabList.Clear();
             attackAnimationEndCallback();
+            Mosaic.SetActive(false);
         }
 
         private void ResetPrefabList()
