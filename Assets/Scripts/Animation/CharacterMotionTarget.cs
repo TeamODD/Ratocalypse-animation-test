@@ -3,41 +3,53 @@ using System.Collections;
 using MoreMountains.Feedbacks;
 using TeamOdd.Ratocalypse.Animation;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class CharacterMotionTarget : MonoBehaviour
 {
     public MMFeedbacks AttackFeedbacks;
     public MMFeedbacks DamageFeedbacks;
-    public GameObject IDLE;
-    public GameObject Attacks;
-    public GameObject Damaged;
+    
+    public GameObject Idle;
+    public GameObject Attack;
+    public GameObject Damage;
 
     private DeathMotionAnimator _deathMotionAnimator;
     private CharacterAnimationQueue _animationQueue;
 
     private bool _initialized;
-    void Start()
-    {
-        IDLE.SetActive(true);
-        Attacks.SetActive(false);
-        Damaged.SetActive(false);
-    }
+
     public void Awake()
     {
         Initialize();
     }
-    public void AttackON()
+
+    public void Start()
     {
-        IDLE.SetActive(false);
-        Attacks.SetActive(true);
-        Damaged.SetActive(false);
+        SetModelIdle();
     }
-    public void DamagedON()
+
+    public void SetModelIdle()
     {
-        Damaged.SetActive(true);
-        Attacks.SetActive(false);
-        IDLE.SetActive(false);
+        Idle.SetActive(true);
+        Attack.SetActive(false);
+        Damage.SetActive(false);
     }
+
+    public void SetModelAttack()
+    {
+        Idle.SetActive(false);
+        Attack.SetActive(true);
+        Damage.SetActive(false);
+    }
+
+    public void SetModelDamaged()
+    {
+        Idle.SetActive(false);
+        Attack.SetActive(false);
+        Damage.SetActive(true);
+    }
+
     public void SetAnimationQueue(CharacterAnimationQueue coroutineQueue)
     {
         _animationQueue = coroutineQueue;
@@ -88,7 +100,7 @@ public class CharacterMotionTarget : MonoBehaviour
         var attackAnimationEndCallback = callbacks[1];
         var feedbacksCoroutine = StartCoroutine(AttackFeedbacks.PlayFeedbacksCoroutine(position));
         yield return new WaitForSeconds(0.4f);
-        AttackON();
+        SetModelAttack();
         yield return new WaitForSeconds(0.1f);
         attackAnimationMiddleCallback();
         yield return feedbacksCoroutine;
@@ -101,7 +113,7 @@ public class CharacterMotionTarget : MonoBehaviour
         var position = transform.position;
         var attackAnimationEndCallback = callbacks[0];
         var feedbacksCoroutine = StartCoroutine(AttackFeedbacks.PlayFeedbacksCoroutine(position));
-        DamagedON();
+        SetModelDamaged();
         yield return feedbacksCoroutine;
         attackAnimationEndCallback();
         yield return null;

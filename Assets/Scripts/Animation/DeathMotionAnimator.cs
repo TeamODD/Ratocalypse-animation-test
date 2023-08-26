@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
+
 namespace TeamOdd.Ratocalypse.Animation
 {
     public class DeathMotionAnimator : MonoBehaviour
@@ -11,21 +12,17 @@ namespace TeamOdd.Ratocalypse.Animation
         private const int FadeOutSteps = 30;
         private const int PrefabSize = 1;
         private const float FrameDuration = 1.0f / PrefabSize;
-        private void Dead()
-        {
-            PlayerDead.Invoke();
-        }
-        private bool MosaicState = false;
 
-        public GameObject Mosaic;
         public GameObject Models;
-        public UnityEvent PlayerDead;
+        public UnityEvent TargetDeadEvent;
         public GameObject Prefab;
         public float ObjectScale = 1.0f;
 
         private readonly List<GameObject> _prefabList = new List<GameObject>();
         private CharacterAnimationQueue _animationQueue;
         private Renderer _renderer;
+        private GameObject _mosaic;
+
         public void Awake()
         {
             _prefabList.Clear();
@@ -42,17 +39,28 @@ namespace TeamOdd.Ratocalypse.Animation
             _renderer = renderer;
         }
 
+        public void SetMosaic(GameObject mosaic)
+        {
+            _mosaic = mosaic;
+        }
+
         public void StartAnimation(params Action[] callbacks)
         {
             ResetPrefabList();
             _animationQueue.AddCallback(() => { return AnimationCoroutine(callbacks); });
         }
 
+        private void InvokeTargetDeadEvents()
+        {
+            TargetDeadEvent.Invoke();
+        }
+
+
         private IEnumerator AnimationCoroutine(params Action[] callbacks)
         {
+            _mosaic.SetActive(true);
             var attackAnimationEndCallback = callbacks[0];
-            Mosaic.SetActive(true);
-            Dead();
+            InvokeTargetDeadEvents();
             while (_prefabList.Count != PrefabSize)
             {
                 var angle = Quaternion.AngleAxis(90f, Vector3.forward);
@@ -66,8 +74,8 @@ namespace TeamOdd.Ratocalypse.Animation
             yield return StartCoroutine(FadeOutCoroutine());
 
             _prefabList.Clear();
+            _mosaic.SetActive(false);
             attackAnimationEndCallback();
-            Mosaic.SetActive(false);
         }
 
         private void ResetPrefabList()
@@ -78,7 +86,6 @@ namespace TeamOdd.Ratocalypse.Animation
 
         private IEnumerator FadeOutCoroutine()
         {
-            // TODO
             yield return null;
         }
     }

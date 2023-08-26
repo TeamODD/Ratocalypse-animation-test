@@ -8,11 +8,14 @@ namespace TeamOdd.Ratocalypse.Animation
         public KeyCode AttacKeyCode = KeyCode.A;
         public KeyCode DamageKeyCode = KeyCode.D;
         public KeyCode DeathKeyCode = KeyCode.F;
+        
         public GameObject Mosaic;
         public CharacterMotionTarget Target;
         public DeathMotionAnimator DeathMotionAnimator;
+        
         private bool _initialized;
         private Renderer _renderer;
+        
         public new void Awake()
         {
             base.Awake();
@@ -74,8 +77,10 @@ namespace TeamOdd.Ratocalypse.Animation
             _renderer = Target.GetComponent<Renderer>();
             Target.SetAnimationQueue(this);
             Target.SetDeathMotionAnimator(DeathMotionAnimator);
+            DeathMotionAnimator.SetMosaic(Mosaic);
             DeathMotionAnimator.SetAnimationQueue(this);
             DeathMotionAnimator.SetRenderer(_renderer);
+            Mosaic.SetActive(false);
             _initialized = true;
         }
     }
